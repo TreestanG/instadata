@@ -185,7 +185,7 @@ export function getMessagingTrend(
   return [...buckets.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([time, counts]) => {
-      const entry: Record<string, number | string> = { time }
+      const entry: { time: string; [contact: string]: number | string } = { time }
       for (const name of topNames) {
         entry[name] = counts[name] ?? 0
       }

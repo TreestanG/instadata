@@ -64,12 +64,13 @@ export async function getMediaUrl(zipFile: File, path: string): Promise<string |
   const entryMap = await getEntryMap(zipFile)
   const entry = findEntry(entryMap, path)
 
-  if (!entry?.getData) {
+  if (!entry || !("getData" in entry)) {
     console.warn("[zip-media] Entry not found for path:", path)
     return null
   }
 
-  const blob = await entry.getData(new BlobWriter())
+  const fileEntry = entry as Entry & { getData: (writer: BlobWriter) => Promise<Blob> }
+  const blob = await fileEntry.getData(new BlobWriter())
   const url = URL.createObjectURL(blob)
   urlCache.set(path, url)
   return url
