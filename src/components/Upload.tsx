@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { Upload as UploadIcon, FileArchive } from "lucide-react"
+import { Upload as UploadIcon, FileArchive, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -143,6 +143,12 @@ export function Upload({ onDataLoaded }: UploadProps) {
           {error && (
             <p className="mt-4 text-sm text-destructive text-center">{error}</p>
           )}
+          <div className="mt-4 flex items-start gap-2 rounded-md border border-border px-3 py-2.5">
+            <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              All data is processed on your device. We don't store or transmit anything.
+            </p>
+          </div>
           <div className="mt-6 border-t pt-4">
             <p className="text-xs font-medium text-muted-foreground mb-2">How to export your Instagram data</p>
             <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
