@@ -226,7 +226,8 @@ export function getGroupMemberStats(conversation: Conversation): { member: strin
 export function searchMessages(
   conversations: Conversation[],
   query: string,
-  conversationId?: string
+  conversationId?: string,
+  dateRange?: { start: Date; end: Date }
 ): { conversation: Conversation; message: InstagramMessage }[] {
   const results: { conversation: Conversation; message: InstagramMessage }[] = []
   const lowerQuery = query.toLowerCase()
@@ -234,12 +235,16 @@ export function searchMessages(
   const searchConvs = conversationId
     ? conversations.filter((c) => c.id === conversationId)
     : conversations
+
+  const rangeStart = dateRange ? dateRange.start.getTime() : null
+  const rangeEnd = dateRange ? dateRange.end.getTime() : null
   
   for (const conv of searchConvs) {
     for (const msg of conv.messages) {
-      if (msg.text?.toLowerCase().includes(lowerQuery)) {
-        results.push({ conversation: conv, message: msg })
-      }
+      if (!msg.text?.toLowerCase().includes(lowerQuery)) continue
+      if (rangeStart !== null && msg.timestamp < rangeStart) continue
+      if (rangeEnd !== null && msg.timestamp > rangeEnd) continue
+      results.push({ conversation: conv, message: msg })
     }
   }
   

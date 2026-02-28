@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { Upload as UploadIcon, FileArchive, ShieldCheck } from "lucide-react"
+import { Upload as UploadIcon, FileArchive, ShieldCheck, Monitor } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -147,6 +147,12 @@ export function Upload({ onDataLoaded }: UploadProps) {
             <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">
               All data is processed on your device. We don't store or transmit anything.
+            </p>
+          </div>
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-border px-3 py-2.5" style={{ borderColor: "rgba(170, 188, 218, 1)" }}>
+            <Monitor className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              Best viewed on PC
             </p>
           </div>
           <div className="mt-6 border-t pt-4">
