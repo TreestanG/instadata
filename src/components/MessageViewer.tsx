@@ -18,8 +18,6 @@ import {
 import { GroupChatBreakdown } from "./GroupChatBreakdown"
 import { getMediaUrl } from "@/lib/zip-media"
 
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
-
 function MediaAttachment({ path, zipFile }: { path: string; zipFile?: File }) {
   const [url, setUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,27 +37,7 @@ function MediaAttachment({ path, zipFile }: { path: string; zipFile?: File }) {
   if (path.match(/\.(mp4|mov|webm)$/i)) {
     return <video src={url} controls className="max-w-full max-h-80 rounded mt-1 block" />
   }
-  
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <img 
-          src={url} 
-          alt="" 
-          className="max-w-full max-h-80 rounded mt-1 block cursor-pointer transition-transform hover:opacity-90 active:scale-95" 
-          loading="lazy" 
-        />
-      </DialogTrigger>
-      <DialogContent className="max-w-7xl w-fit h-fit max-h-[90vh] p-0 overflow-hidden border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-black/50 [&>button]:hover:bg-black/70 [&>button]:p-2 [&>button]:rounded-full [&>button]:right-2 [&>button]:top-2">
-        <DialogTitle className="sr-only">Expanded Image</DialogTitle>
-        <img 
-          src={url} 
-          alt="Expanded media" 
-          className="w-auto h-auto max-w-[90vw] max-h-[90vh] object-contain" 
-        />
-      </DialogContent>
-    </Dialog>
-  )
+  return <img src={url} alt="" className="max-w-full max-h-80 rounded mt-1 block" loading="lazy" />
 }
 
 interface MessageViewerProps {

@@ -2,14 +2,20 @@ import { useState, useMemo } from "react"
 import { format } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { ContactStats } from "@/lib/instagram-parser"
-import { MessageCircle, TrendingUp } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import type { ContactStats, TimeMode } from "@/lib/instagram-parser"
+import { MessageCircle, TrendingUp, Search } from "lucide-react"
+import { LineChart } from "@/components/chart/line-chart"
+import { getMessagingTrend, defaultBucketSize } from "@/lib/instagram-parser"
 
 interface StatsPanelProps {
   conversations: any[]
   userName: string
   precomputedStats: ContactStats[]
   onSelectContact: (contactName: string) => void
+  dailyCountsByContact: Record<string, Record<string, number>>
+  timeMode: TimeMode
+  customRange?: { start: Date; end: Date }
 }
 
 function formatHour(hour: number): string {
@@ -78,9 +84,33 @@ function HourlyHistogram({ distribution }: { distribution: number[] }) {
   )
 }
 
-function ContactDetail({ stats }: { stats: ContactStats }) {
+function ContactDetail({ 
+  stats,
+  dailyCountsByContact,
+  timeMode,
+  customRange
+}: { 
+  stats: ContactStats
+  dailyCountsByContact: Record<string, Record<string, number>>
+  timeMode: TimeMode
+  customRange?: { start: Date; end: Date }
+}) {
   const firstMsg = stats.firstMessage > 0 ? new Date(stats.firstMessage) : null
   const lastMsg = stats.lastMessage > 0 ? new Date(stats.lastMessage) : null
+
+  const trendData = useMemo(() => {
+    const contactData = { [stats.name]: dailyCountsByContact[stats.name] ?? {} }
+    return getMessagingTrend(contactData, timeMode, undefined, customRange)
+  }, [stats.name, dailyCountsByContact, timeMode, customRange])
+
+  const chartMax = useMemo(() => {
+    let max = 0
+    for (const entry of trendData) {
+      const val = entry[stats.name]
+      if (typeof val === "number" && val > max) max = val
+    }
+    return Math.ceil(max * 1.1) || 10
+  }, [trendData, stats.name])
 
   return (
     <div className="space-y-4">
@@ -117,6 +147,30 @@ function ContactDetail({ stats }: { stats: ContactStats }) {
       <div className="p-4 rounded-lg border">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="h-4 w-4" />
+          <h4 className="font-medium">Messaging Trend</h4>
+        </div>
+        {trendData.length > 0 ? (
+          <LineChart
+            data={trendData}
+            dataKey={[stats.name]}
+            xAxisKey="time"
+            colors={["hsl(221.2 83.2% 53.3%)"]}
+            yAxisDomain={[0, chartMax]}
+            height={200}
+            showGrid
+            showXAxis
+            showYAxis
+            showLegend={false}
+            showTooltip
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">No data for this period</p>
+        )}
+      </div>
+
+      <div className="p-4 rounded-lg border">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp className="h-4 w-4" />
           <h4 className="font-medium">Messages by Hour</h4>
         </div>
         <HourlyHistogram distribution={stats.hourlyDistribution} />
@@ -125,13 +179,26 @@ function ContactDetail({ stats }: { stats: ContactStats }) {
   )
 }
 
-export function StatsPanel({ precomputedStats, onSelectContact }: StatsPanelProps) {
+export function StatsPanel({ 
+  precomputedStats, 
+  onSelectContact, 
+  dailyCountsByContact, 
+  timeMode, 
+  customRange 
+}: StatsPanelProps) {
   const [selectedContact, setSelectedContact] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
   const selectedStats = useMemo(() => {
     if (!selectedContact) return null
     return precomputedStats.find(s => s.name === selectedContact) || null
   }, [precomputedStats, selectedContact])
+
+  const filteredContacts = useMemo(() => {
+    if (!searchQuery.trim()) return precomputedStats
+    const lowerQuery = searchQuery.toLowerCase()
+    return precomputedStats.filter(s => s.name.toLowerCase().includes(lowerQuery))
+  }, [precomputedStats, searchQuery])
 
   const handleSelect = (name: string) => {
     setSelectedContact(name)
@@ -142,24 +209,35 @@ export function StatsPanel({ precomputedStats, onSelectContact }: StatsPanelProp
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            Top Contacts
-          </CardTitle>
+          <div className="flex items-center justify-between mb-2">
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Contacts
+            </CardTitle>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search contacts..."
+              className="pl-8 h-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-300px)]">
+          <ScrollArea className="h-[calc(100vh-345px)]">
             <div className="space-y-2 p-4">
-              {precomputedStats.map((stats) => (
+              {filteredContacts.map((stats) => (
                 <ContactCard
                   key={stats.name}
                   stats={stats}
                   onClick={() => handleSelect(stats.name)}
                 />
               ))}
-              {precomputedStats.length === 0 && (
+              {filteredContacts.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">
-                  No messages found in this time period
+                  No contacts found
                 </p>
               )}
             </div>
@@ -175,7 +253,14 @@ export function StatsPanel({ precomputedStats, onSelectContact }: StatsPanelProp
         </CardHeader>
         <CardContent>
           {selectedStats ? (
-            <ContactDetail stats={selectedStats} />
+            <div className="h-[calc(100vh-230px)] overflow-y-auto pr-4 -mr-4">
+              <ContactDetail 
+                stats={selectedStats} 
+                dailyCountsByContact={dailyCountsByContact}
+                timeMode={timeMode}
+                customRange={customRange}
+              />
+            </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">
               Click on a contact to see detailed stats

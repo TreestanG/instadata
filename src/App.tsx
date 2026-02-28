@@ -93,10 +93,9 @@ function App() {
         .map(s => ({ ...s, firstMessage: s.firstMessage === Infinity ? 0 : s.firstMessage, lastMessage: s.lastMessage === -Infinity ? 0 : s.lastMessage }))
         .filter(s => s.totalMessages > 0)
         .sort((a, b) => b.totalMessages - a.totalMessages)
-        .slice(0, 30)
     }
     if (!data.contactStatsByMode) return []
-    return (data.contactStatsByMode[timeMode] ?? data.precomputedContactStats).slice(0, 30)
+    return data.contactStatsByMode[timeMode] ?? data.precomputedContactStats
   }, [data, timeMode, customRange, userName])
 
 
@@ -191,6 +190,9 @@ function App() {
                   userName={userName}
                   precomputedStats={filteredStats}
                   onSelectContact={handleSelectContact}
+                  dailyCountsByContact={data.dailyCountsByContact ?? {}}
+                  timeMode={timeMode}
+                  customRange={customRange}
                 />
               </TabsContent>
 
