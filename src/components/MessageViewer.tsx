@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { format, startOfMonth, endOfMonth, addMonths } from "date-fns"
-import { Calendar } from "lucide-react"
+import { Calendar, ArrowUp, ArrowDown } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -64,6 +64,9 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
   const [draftEnd, setDraftEnd] = useState<string>(
     () => format(new Date(conversation.endTime), "yyyy-MM-dd")
   )
+  const [isAtTop, setIsAtTop] = useState(true)
+  const [isAtBottom, setIsAtBottom] = useState(false)
+  const viewportRef = useRef<HTMLDivElement>(null)
 
   // Reset when conversation changes
   useEffect(() => {
@@ -142,6 +145,69 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
 
     return groups
   }, [filteredMessages])
+
+  // Check scroll position when messages change
+  useEffect(() => {
+    if (viewportRef.current) {
+      const target = viewportRef.current
+      const threshold = 5
+      setIsAtTop(target.scrollTop <= threshold)
+      setIsAtBottom(Math.abs(target.scrollHeight - target.clientHeight - target.scrollTop) <= threshold)
+    }
+  }, [filteredMessages])
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget
+    const threshold = 5
+    setIsAtTop(target.scrollTop <= threshold)
+    setIsAtBottom(Math.abs(target.scrollHeight - target.clientHeight - target.scrollTop) <= threshold)
+  }
+
+  const expandEarlier = () => {
+    let newStart: Date;
+    let newEnd: Date;
+
+    if (selectedMonth !== "all") {
+      const [year, month] = selectedMonth.split("-").map(Number)
+      newStart = addMonths(startOfMonth(new Date(year, month - 1)), -1)
+      newEnd = endOfMonth(new Date(year, month - 1))
+    } else if (startDate && endDate) {
+      newStart = addMonths(startDate, -1)
+      newEnd = endDate
+    } else {
+      return
+    }
+
+    setStartDate(newStart)
+    setEndDate(newEnd)
+    setSelectedMonth("all")
+    setDraftStart(format(newStart, "yyyy-MM-dd"))
+    setDraftEnd(format(newEnd, "yyyy-MM-dd"))
+    setShowingRecentOnly(false)
+  }
+
+  const expandLater = () => {
+    let newStart: Date;
+    let newEnd: Date;
+
+    if (selectedMonth !== "all") {
+      const [year, month] = selectedMonth.split("-").map(Number)
+      newStart = startOfMonth(new Date(year, month - 1))
+      newEnd = addMonths(endOfMonth(new Date(year, month - 1)), 1)
+    } else if (startDate && endDate) {
+      newStart = startDate
+      newEnd = addMonths(endDate, 1)
+    } else {
+      return
+    }
+
+    setStartDate(newStart)
+    setEndDate(newEnd)
+    setSelectedMonth("all")
+    setDraftStart(format(newStart, "yyyy-MM-dd"))
+    setDraftEnd(format(newEnd, "yyyy-MM-dd"))
+    setShowingRecentOnly(false)
+  }
 
   return (
     <Card className="h-full">
@@ -276,8 +342,21 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[calc(100vh-420px)]">
-          <div className="space-y-4 p-4 w-full overflow-x-auto">
+        <ScrollArea 
+          className="h-[calc(100vh-420px)]"
+          viewportRef={viewportRef}
+          onScroll={handleScroll}
+        >
+          <div className="space-y-4 p-4 w-full overflow-x-hidden">
+            {isAtTop && (selectedMonth !== "all" || (startDate && endDate)) && (
+              <div className="flex justify-center py-2">
+                <Button variant="ghost" size="sm" onClick={expandEarlier} className="text-muted-foreground hover:text-foreground">
+                  <ArrowUp className="mr-2 h-4 w-4" />
+                  Load previous month
+                </Button>
+              </div>
+            )}
+            
             {groupedMessages.map((group) => (
               <div key={group.date}>
                 <div className="sticky top-0 bg-background py-2 text-center text-xs text-muted-foreground border-b mb-2">
@@ -287,10 +366,10 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
                   {group.messages.map((msg, idx) => (
                     <div
                       key={idx}
-                      className={`flex w-full min-w-0 ${msg.sender === userName ? "justify-end" : "justify-start"}`}
+                      className={`flex w-full ${msg.sender === userName ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`w-fit max-w-[min(70%,42rem)] min-w-0 overflow-hidden rounded-lg p-3 ${
+                        className={`max-w-[70%] min-w-0 overflow-hidden rounded-lg p-3 ${
                           msg.sender === userName
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted"
@@ -301,7 +380,7 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
                             {msg.sender}
                           </p>
                         )}
-                        <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.text}</p>
+                        <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                         {msg.photos?.map((p, i) => <MediaAttachment key={`p${i}`} path={p} zipFile={zipFile} />)}
                         {msg.videos?.map((v, i) => <MediaAttachment key={`v${i}`} path={v} zipFile={zipFile} />)}
                         <p
@@ -323,6 +402,15 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
               <p className="text-center text-muted-foreground py-8">
                 No messages found for this time period
               </p>
+            )}
+
+            {isAtBottom && (selectedMonth !== "all" || (startDate && endDate)) && groupedMessages.length > 0 && (
+              <div className="flex justify-center py-2">
+                <Button variant="ghost" size="sm" onClick={expandLater} className="text-muted-foreground hover:text-foreground">
+                  <ArrowDown className="mr-2 h-4 w-4" />
+                  Load next month
+                </Button>
+              </div>
             )}
           </div>
         </ScrollArea>
