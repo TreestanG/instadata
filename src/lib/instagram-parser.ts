@@ -130,13 +130,15 @@ export function getMessagingTrend(
   _topContacts?: { name: string }[],
   customRange?: { start: Date; end: Date },
   bucketSize?: BucketSize,
-  rangeOverride?: { start: Date; end: Date }
+  rangeOverride?: { start: Date; end: Date },
+  customBucketDays?: number
 ): { time: string; [contact: string]: number | string }[] {
   const contactNames = Object.keys(dailyCountsByContact)
   if (contactNames.length === 0) return []
 
   const { start, end } = rangeOverride ?? getTimeRange(mode, customRange)
   const bucket = bucketSize ?? defaultBucketSize(mode, customRange)
+  const bucketMs = customBucketDays ? customBucketDays * 86400_000 : 0
 
   // Step 1: Bucket ALL contacts by time period
   const buckets = new Map<string, Record<string, number>>()
@@ -145,7 +147,9 @@ export function getMessagingTrend(
     for (const [dateStr, count] of Object.entries(daily)) {
       const date = new Date(dateStr + "T00:00:00")
       if (date < start || date > end) continue
-      const key = formatTimeKey(date, bucket)
+      const key = customBucketDays
+        ? format(new Date(start.getTime() + Math.floor((date.getTime() - start.getTime()) / bucketMs) * bucketMs), "yyyy-MM-dd")
+        : formatTimeKey(date, bucket)
       if (!buckets.has(key)) buckets.set(key, {})
       buckets.get(key)![name] = (buckets.get(key)![name] ?? 0) + count
     }

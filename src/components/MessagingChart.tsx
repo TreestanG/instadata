@@ -49,18 +49,24 @@ export function MessagingChart({ dailyCountsByContact, mode, customRange }: Mess
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [bucketSize, setBucketSize] = useState<BucketSize>(() => defaultBucketSize(mode, customRange))
   const [shift, setShift] = useState(0)
+  const [customBucketDays, setCustomBucketDays] = useState<number | null>(null)
+  const [customDaysStr, setCustomDaysStr] = useState("14")
 
   // Reset to smart default when time mode or range changes
   useEffect(() => {
     setBucketSize(defaultBucketSize(mode, customRange))
     setHidden(new Set())
     setShift(0)
+    setCustomBucketDays(null)
   }, [mode, customRange])
 
   // Compute the shifted time range
   const shiftedRange = useMemo(() => {
     const base = getTimeRange(mode, customRange)
     if (shift === 0) return base
+    if (customBucketDays) {
+      return { start: addDays(base.start, shift * customBucketDays), end: addDays(base.end, shift * customBucketDays) }
+    }
     const fn = {
       day:   (d: Date, n: number) => addDays(d, n),
       week:  (d: Date, n: number) => addWeeks(d, n),
@@ -68,7 +74,7 @@ export function MessagingChart({ dailyCountsByContact, mode, customRange }: Mess
       year:  (d: Date, n: number) => addYears(d, n),
     }[bucketSize]
     return { start: fn(base.start, shift), end: fn(base.end, shift) }
-  }, [mode, customRange, bucketSize, shift])
+  }, [mode, customRange, bucketSize, shift, customBucketDays])
 
   const canShiftRight = shiftedRange.end < new Date()
 
@@ -82,8 +88,8 @@ export function MessagingChart({ dailyCountsByContact, mode, customRange }: Mess
   }
 
   const data = useMemo(
-    () => getMessagingTrend(dailyCountsByContact, mode, undefined, customRange, bucketSize, shiftedRange),
-    [dailyCountsByContact, mode, customRange, bucketSize, shiftedRange]
+    () => getMessagingTrend(dailyCountsByContact, mode, undefined, customRange, customBucketDays ? undefined : bucketSize, shiftedRange, customBucketDays ?? undefined),
+    [dailyCountsByContact, mode, customRange, bucketSize, shiftedRange, customBucketDays]
   )
 
   // Sorted contact names by total messages
@@ -188,24 +194,48 @@ export function MessagingChart({ dailyCountsByContact, mode, customRange }: Mess
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Messaging Trends</CardTitle>
         <div className="flex items-center gap-3">
-          {/* Bucket size selector — only shown when multiple options exist */}
-          {availableBuckets.length > 1 && (
-            <div className="flex items-center gap-1 rounded-md border p-0.5">
-              {availableBuckets.map(b => (
-                <button
-                  key={b}
-                  onClick={() => setBucketSize(b)}
-                  className={`px-2.5 py-1 text-xs rounded transition-colors ${
-                    bucketSize === b
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {BUCKET_LABELS[b]}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Bucket size selector */}
+          <div className="flex items-center gap-1 rounded-md border p-0.5">
+            {availableBuckets.map(b => (
+              <button
+                key={b}
+                onClick={() => { setBucketSize(b); setCustomBucketDays(null) }}
+                className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                  customBucketDays === null && bucketSize === b
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                {BUCKET_LABELS[b]}
+              </button>
+            ))}
+            {customBucketDays !== null ? (
+              <div className="flex items-center gap-1 px-1.5 py-1 rounded bg-primary text-primary-foreground text-xs">
+                <input
+                  type="number"
+                  min="1"
+                  value={customDaysStr}
+                  onChange={e => {
+                    setCustomDaysStr(e.target.value)
+                    const n = parseInt(e.target.value)
+                    if (n > 0) setCustomBucketDays(n)
+                  }}
+                  className="w-10 bg-transparent text-center outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <span className="opacity-80">days</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  const n = parseInt(customDaysStr)
+                  setCustomBucketDays(n > 0 ? n : 14)
+                }}
+                className="px-2.5 py-1 text-xs rounded transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+              >
+                Custom
+              </button>
+            )}
+          </div>
           <Button
             variant={yAxisLocked ? "secondary" : "outline"}
             size="sm"
