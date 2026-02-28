@@ -230,7 +230,7 @@ function App() {
                       onSelect={handleConversationSelect}
                     />
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-2 min-w-0">
                     {selectedConversation ? (
                       <MessageViewer
                         conversation={selectedConversation}

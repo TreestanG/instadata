@@ -143,6 +143,17 @@ export function Upload({ onDataLoaded }: UploadProps) {
           {error && (
             <p className="mt-4 text-sm text-destructive text-center">{error}</p>
           )}
+          <div className="mt-6 border-t pt-4">
+            <p className="text-xs font-medium text-muted-foreground mb-2">How to export your Instagram data</p>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Go to <span className="font-medium">Accounts Center</span></li>
+              <li>Tap <span className="font-medium">Your information and permissions</span> → <span className="font-medium">Download your information</span></li>
+              <li>Tap <span className="font-medium">Download or transfer information</span> → select your profile → <span className="font-medium">Download to device</span></li>
+              <li>Set date range to <span className="font-medium">All time</span> and format to <span className="font-medium">JSON</span></li>
+              <li>Create the export and download the ZIP when ready</li>
+              <li>It will around an hour to export. Remember to download the ZIP file!</li>
+            </ol>
+          </div>
         </CardContent>
       </Card>
     </div>

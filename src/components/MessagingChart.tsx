@@ -257,6 +257,18 @@ export function MessagingChart({ dailyCountsByContact, mode, customRange }: Mess
         </div>
         {/* Clickable legend — click to toggle a line */}
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center">
+          <button
+            onClick={() => {
+              if (hidden.size === dataKey.length) {
+                setHidden(new Set())
+              } else {
+                setHidden(new Set(dataKey))
+              }
+            }}
+            className="flex items-center gap-1.5 text-xs rounded px-2 py-0.5 border hover:bg-muted transition-colors font-medium"
+          >
+            {hidden.size === dataKey.length ? "Show all" : "Hide all"}
+          </button>
           {dataKey.map((name, i) => {
             const isHidden = hidden.has(name)
             return (

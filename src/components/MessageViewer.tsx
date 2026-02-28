@@ -35,9 +35,9 @@ function MediaAttachment({ path, zipFile }: { path: string; zipFile?: File }) {
   if (loading) return <div className="h-32 w-48 rounded bg-muted animate-pulse" />
   if (!url) return <p className="text-xs text-muted-foreground">Media unavailable</p>
   if (path.match(/\.(mp4|mov|webm)$/i)) {
-    return <video src={url} controls className="max-w-full rounded mt-1" />
+    return <video src={url} controls className="max-w-full max-h-80 rounded mt-1 block" />
   }
-  return <img src={url} alt="" className="max-w-full rounded mt-1" loading="lazy" />
+  return <img src={url} alt="" className="max-w-full max-h-80 rounded mt-1 block" loading="lazy" />
 }
 
 interface MessageViewerProps {
@@ -277,7 +277,7 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[calc(100vh-420px)]">
-          <div className="space-y-4 p-4">
+          <div className="space-y-4 p-4 w-full overflow-x-hidden">
             {groupedMessages.map((group) => (
               <div key={group.date}>
                 <div className="sticky top-0 bg-background py-2 text-center text-xs text-muted-foreground border-b mb-2">
@@ -287,10 +287,10 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
                   {group.messages.map((msg, idx) => (
                     <div
                       key={idx}
-                      className={`flex ${msg.sender === userName ? "justify-end" : "justify-start"}`}
+                      className={`flex w-full ${msg.sender === userName ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
+                        className={`max-w-[70%] min-w-0 overflow-hidden rounded-lg p-3 ${
                           msg.sender === userName
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted"
