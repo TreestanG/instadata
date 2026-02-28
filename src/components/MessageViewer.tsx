@@ -277,7 +277,7 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[calc(100vh-420px)]">
-          <div className="space-y-4 p-4 w-full overflow-x-hidden">
+          <div className="space-y-4 p-4 w-full overflow-x-auto">
             {groupedMessages.map((group) => (
               <div key={group.date}>
                 <div className="sticky top-0 bg-background py-2 text-center text-xs text-muted-foreground border-b mb-2">
@@ -287,10 +287,10 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
                   {group.messages.map((msg, idx) => (
                     <div
                       key={idx}
-                      className={`flex w-full ${msg.sender === userName ? "justify-end" : "justify-start"}`}
+                      className={`flex w-full min-w-0 ${msg.sender === userName ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[70%] min-w-0 overflow-hidden rounded-lg p-3 ${
+                        className={`w-fit max-w-[min(70%,42rem)] min-w-0 overflow-hidden rounded-lg p-3 ${
                           msg.sender === userName
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted"
@@ -301,7 +301,7 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
                             {msg.sender}
                           </p>
                         )}
-                        <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                        <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.text}</p>
                         {msg.photos?.map((p, i) => <MediaAttachment key={`p${i}`} path={p} zipFile={zipFile} />)}
                         {msg.videos?.map((v, i) => <MediaAttachment key={`v${i}`} path={v} zipFile={zipFile} />)}
                         <p
