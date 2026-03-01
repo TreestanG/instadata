@@ -81,12 +81,12 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
     setDraftEnd(format(defaultEnd, "yyyy-MM-dd"))
   }, [conversation.id, conversation.endTime])
 
-  // Jump to ±1 month when a search result is clicked
+  // Jump to a focused range when a search result is clicked
   useEffect(() => {
     if (!targetTimestamp) return
-    const ONE_MONTH = 30 * 86400_000
-    const start = new Date(targetTimestamp - ONE_MONTH)
-    const end = new Date(targetTimestamp + ONE_MONTH)
+    const ONE_WEEK = 7 * 86400_000
+    const start = new Date(targetTimestamp - ONE_WEEK)
+    const end = new Date(targetTimestamp + ONE_WEEK)
     setSelectedMonth("all")
     setSelectedYear("all")
     setShowingRecentOnly(false)
@@ -126,6 +126,19 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
 
     return getConversationMessages(conversation, start, end)
   }, [conversation, selectedMonth, startDate, endDate])
+
+  // Scroll to the specific message when targetTimestamp changes
+  useEffect(() => {
+    if (!targetTimestamp) return
+    // Small timeout to allow render
+    const timer = setTimeout(() => {
+      const element = document.getElementById(`message-${targetTimestamp}`)
+      if (element && viewportRef.current) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" })
+      }
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [targetTimestamp, filteredMessages])
 
   const groupedMessages = useMemo(() => {
     const groups: { date: string; messages: InstagramMessage[] }[] = []
@@ -366,10 +379,15 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
                   {group.messages.map((msg, idx) => (
                     <div
                       key={idx}
+                      id={`message-${msg.timestamp}`}
                       className={`flex w-full ${msg.sender === userName ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[70%] min-w-0 overflow-hidden rounded-lg p-3 ${
+                        className={`max-w-[70%] min-w-0 overflow-hidden rounded-lg p-3 transition-colors duration-500 ${
+                          msg.timestamp === targetTimestamp 
+                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                            : ""
+                        } ${
                           msg.sender === userName
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted"
