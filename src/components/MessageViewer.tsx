@@ -21,6 +21,7 @@ import { getMediaUrl } from "@/lib/zip-media"
 function MediaAttachment({ path, zipFile }: { path: string; zipFile?: File }) {
   const [url, setUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
     if (!zipFile) return
@@ -31,13 +32,55 @@ function MediaAttachment({ path, zipFile }: { path: string; zipFile?: File }) {
     return () => { cancelled = true }
   }, [zipFile, path])
 
+  // Handle escape key to close expanded image
+  useEffect(() => {
+    if (!isExpanded) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsExpanded(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isExpanded])
+
   if (!zipFile) return null
   if (loading) return <div className="h-32 w-48 rounded bg-muted animate-pulse" />
   if (!url) return <p className="text-xs text-muted-foreground">Media unavailable</p>
   if (path.match(/\.(mp4|mov|webm)$/i)) {
     return <video src={url} controls className="max-w-full max-h-80 rounded mt-1 block" />
   }
-  return <img src={url} alt="" className="max-w-full max-h-80 rounded mt-1 block" loading="lazy" />
+  return (
+    <>
+      <img 
+        src={url} 
+        alt="" 
+        onClick={() => setIsExpanded(true)}
+        className="max-w-full max-h-80 rounded mt-1 block cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]" 
+        loading="lazy" 
+      />
+      {isExpanded && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-in fade-in duration-200 cursor-pointer"
+          onClick={() => setIsExpanded(false)}
+        >
+          <img 
+            src={url} 
+            alt="" 
+            className="max-w-[95vw] max-h-[95vh] object-contain rounded-md shadow-2xl animate-in zoom-in-95 duration-200 cursor-default" 
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button 
+            className="absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors rounded-full bg-black/20 hover:bg-black/40"
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsExpanded(false)
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      )}
+    </>
+  )
 }
 
 interface MessageViewerProps {
