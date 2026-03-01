@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import type { ContactStats, TimeMode } from "@/lib/instagram-parser"
 import { MessageCircle, TrendingUp, Search } from "lucide-react"
 import { LineChart } from "@/components/chart/line-chart"
-import { getMessagingTrend, defaultBucketSize } from "@/lib/instagram-parser"
+import { getMessagingTrend } from "@/lib/instagram-parser"
 
 interface StatsPanelProps {
   conversations: any[]
