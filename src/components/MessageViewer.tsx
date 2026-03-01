@@ -67,6 +67,11 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
   const [isAtTop, setIsAtTop] = useState(true)
   const [isAtBottom, setIsAtBottom] = useState(false)
   const viewportRef = useRef<HTMLDivElement>(null)
+  
+  // Refs to preserve scroll position when expanding earlier
+  const previousScrollHeight = useRef<number>(0)
+  const previousScrollTop = useRef<number>(0)
+  const isExpandingEarlier = useRef<boolean>(false)
 
   // Reset when conversation changes
   useEffect(() => {
@@ -159,10 +164,22 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
     return groups
   }, [filteredMessages])
 
-  // Check scroll position when messages change
+  // Check scroll position when messages change, and preserve scroll if we expanded earlier
   useEffect(() => {
     if (viewportRef.current) {
       const target = viewportRef.current
+      
+      // If we just loaded earlier messages, adjust the scroll position down
+      // by the height of the newly inserted content so the user stays looking
+      // at the exact same message they were before clicking "Load previous month"
+      if (isExpandingEarlier.current) {
+        const heightDifference = target.scrollHeight - previousScrollHeight.current
+        if (heightDifference > 0) {
+          target.scrollTop = previousScrollTop.current + heightDifference
+        }
+        isExpandingEarlier.current = false
+      }
+
       const threshold = 5
       setIsAtTop(target.scrollTop <= threshold)
       setIsAtBottom(Math.abs(target.scrollHeight - target.clientHeight - target.scrollTop) <= threshold)
@@ -190,6 +207,15 @@ export function MessageViewer({ conversation, userName, zipFile, targetTimestamp
     } else {
       return
     }
+
+    // Save current scroll metrics before state updates trigger re-render
+    if (viewportRef.current) {
+      const target = viewportRef.current
+      previousScrollHeight.current = target.scrollHeight
+      previousScrollTop.current = target.scrollTop
+    }
+    
+    isExpandingEarlier.current = true
 
     setStartDate(newStart)
     setEndDate(newEnd)
